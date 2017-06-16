@@ -1,0 +1,27 @@
+
+#map {
+    height : 500px;
+    width : 1200px;
+    display: inline-block;
+}
+
+#form {
+    display: inline-block;
+    position: relative;
+}
+
+.wrapper {
+    /*width: 100%;*/
+    /*height: 100%;*/
+    display: flex;
+}
+
+.tweet {
+    border: 2px solid #dadada;
+    border-radius: 5px;
+    margin: 10px;
+}
+
+.tweet h4 {
+    background-color: #dadada;
+}
