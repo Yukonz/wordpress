@@ -49,7 +49,7 @@ function wp_hourly_tweets() {
 function get_tweets()
 {
     global $wpdb;
-    $tweets_count = 10;
+    $tweets_count = 50;
     require_once 'TwitterAPIExchange.php';
 
     $settings = array(
@@ -78,7 +78,7 @@ function get_tweets()
     foreach ($tweets['statuses'] as $tweet) {
         $tweet_data = array('text'=>$tweet['text'], 'name' => $tweet['user']['name'], 'date'=>$tweet['created_at'], 'tag'=>get_option('twitter_subject'));
         $wpdb->insert($table_name, $tweet_data, array("%s", "%s", "%s"));
-        echo '<br><hr>' . $tweet['text'] . ' | ' . $tweet['created_at'] . ' | ' . $tweet['user']['name'];
+//        echo '<br><hr>' . $tweet['text'] . ' | ' . $tweet['created_at'] . ' | ' . $tweet['user']['name'];
     }
 }
 
@@ -111,6 +111,7 @@ function check_twitter_subject($data){
 
 function wp_mymap_settings()
 {
+    do_action( 'load_scripts_for_map' );
     get_tweets(); ?>
     <h2>WP MyMap Plugin</h2>
     <?php settings_errors(); ?>
@@ -157,9 +158,9 @@ function wp_mymap_settings()
 
 <?php }
 
-function plugin_assets()
+add_action( 'load_scripts_for_map', 'load_scripts');
+function load_scripts()
 {
-    wp_enqueue_style( 'style_css', plugin_dir_url( __FILE__ ) . '/css/style.css' );
     wp_enqueue_script('jquery');
     wp_enqueue_script( 'map_js', plugin_dir_url( __FILE__ ) . '/js/map.js' , 'jquery');
     wp_enqueue_script( 'google_maps_js', 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBqAcpYEHCnK_peTEE0QrQtKO9SuAnE2pQ' , 'map_js', false, true);
@@ -171,14 +172,21 @@ function plugin_assets()
                         );
     wp_localize_script( 'map_js', 'params', $map_params );
 }
-add_action( 'admin_enqueue_scripts', 'plugin_assets');
 
+add_action('admin_enqueue_scripts', 'load_styles');
+function load_styles()
+{
+    wp_enqueue_style( 'style_css', plugin_dir_url( __FILE__ ) . '/css/style.css' );
+}
+
+
+add_action('init', 'init_textdomain');
 function init_textdomain()
 {
     load_plugin_textdomain('wp-mymap', false ,'wp_mymap/languages/');
 }
-add_action('init', 'init_textdomain');
 
+add_shortcode( 'twitter', 'get_tweets_from_db' );
 function get_tweets_from_db(){
     global $wpdb;
     $table_name = $wpdb->prefix . 'tweets';
@@ -191,22 +199,72 @@ function get_tweets_from_db(){
               </div>";
     }
 }
-add_shortcode( 'twitter', 'get_tweets_from_db' );
-
 
 //WP-TABLE
 
 require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
-require_once('TweetsTable.php');
-require_once('TweetsPage.php');
+require_once('Tweets_Table.php');
 
+function create_tweets_table()
+{
+    $TweetsTable = new Tweets_Table;
+    ?>
 
+    <div id='tweets_table' class="wrap"><h2>Tweets Table </h2>
+         <form method="post" >
+         <input type="hidden" name="page" value="tweets_search">
+             <?php
+             if( isset($_POST['s']) ){
+                 $TweetsTable->prepare_items($_POST['s']);
+             } else {
+                 $TweetsTable->prepare_items();
+             }
+            $TweetsTable->search_box( 'search', 'search_id' );
+            $TweetsTable->display();
+            ?>
+         </form>
+        <button class='button action'><a href='admin.php?page=tweets_table&action=to_xls' >Save to XLS</a></button>
+        <br>
+        <button class='button action'><a href='admin.php?page=tweets_table&action=to_csv' >Save to CSV</a></button>
+    </div>
 
+<?php
+}
 
+add_action('admin_menu','tweets_menu');
+function tweets_menu()
+{
+    $hook = add_menu_page('Tweets Table',
+        'Tweets Table',
+        'administrator',
+        'tweets_table',
+        'create_tweets_table',
+        plugins_url('/wp_mymap.png',
+            __FILE__));
 
+    add_action( "load-$hook", 'screen_option' );
+}
 
+function screen_option()
+{
+    $option = 'per_page';
+    $args   = [
+        'label'   => 'Tweets per page:',
+        'default' => 20,
+        'option'  => 'tweets_per_page'
+    ];
 
+    add_screen_option( $option, $args );
+}
 
-add_action( 'plugins_loaded', function () {
-    Tweets_page::get_instance();
-} );
+add_filter('set-screen-option', 'tweets_set_option', 10, 3);
+function tweets_set_option($status, $option, $value)
+{
+    return $value;
+}
+
+add_action('init', 'do_output_buffer');
+function do_output_buffer()
+{
+    ob_start();
+}

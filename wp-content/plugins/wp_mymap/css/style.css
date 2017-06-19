@@ -25,3 +25,23 @@
 .tweet h4 {
     background-color: #dadada;
 }
+
+#tweets_table .column-cb {
+    width: 3%;
+}
+
+#tweets_table .column-id {
+    width: 3%;
+}
+
+#tweets_table .column-name {
+    width: 15%;
+}
+
+#tweets_table .column-date {
+    width: 15%;
+}
+
+#tweets_table .column-tag {
+    width: 10%;
+}
