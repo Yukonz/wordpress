@@ -45,3 +45,25 @@
 #tweets_table .column-tag {
     width: 10%;
 }
+
+#edit_form {
+    position: absolute;
+    left: 35%;
+    top: 10%;
+    border: 3px solid grey;
+    background-color: white;
+    width: 500px;
+    height: 470px;
+    padding: 25px;
+}
+
+.edit-field {
+    width: 100%;
+}
+
+.tweet-text {
+    width: 100%;
+    max-width: 100%;
+    height: 250px;
+    max-height: 250px;
+}

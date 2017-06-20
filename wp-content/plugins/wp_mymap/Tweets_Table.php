@@ -62,7 +62,7 @@ class Tweets_Table extends WP_List_Table
     function column_name($item)
     {
         return $item['name'].' '.$this -> row_actions(array(
-//                'edit'   => '<a href="?page='.$_REQUEST['page'].'&action=edit&id='.$item['id'].'">Edit</a>',
+                'edit'   => '<a href="?page='.$_REQUEST['page'].'&action=edit&id='.$item['id'].'">Edit</a>',
                 'delete' => '<a href="?page='.$_REQUEST['page'].'&action=delete&id='.$item['id'].'">Delete</a>',
             ));
     }
@@ -74,14 +74,23 @@ class Tweets_Table extends WP_List_Table
 
     public function process_bulk_action()
     {
+        if (isset($_POST['edit_text'])){
+            global $wpdb;
+            $sql = "UPDATE {$wpdb->prefix}tweets SET name='" . $_POST['edit_name'] . "', text='" . $_POST['edit_text'] ."', date='" . $_POST['edit_date'] . "' WHERE id={$_GET['id']}";
+            $wpdb->query($sql);
+            wp_redirect( esc_url( add_query_arg() ) );
+        }
+
         if ( 'delete' === $this->current_action() ) {
             $this->delete_tweet ($_GET['id']);
             wp_redirect( esc_url( add_query_arg() ) );
         }
 
         if ( 'edit' === $this->current_action() ) {
-            echo ' edit';
-            echo ' ID: '. $_GET['id'];
+            global $wpdb;
+            $sql = "SELECT * FROM {$wpdb->prefix}tweets WHERE id={$_GET['id']}";
+            $result = $wpdb->get_results( $sql, 'ARRAY_A' );
+            $this->view_edit_form($result);
         }
 
         if ( 'to_xls' === $this->current_action() ) {
@@ -110,7 +119,6 @@ class Tweets_Table extends WP_List_Table
             [ '%d' ]
         );
     }
-
 
     public function column_default($item, $column_name )
     {
@@ -143,8 +151,6 @@ class Tweets_Table extends WP_List_Table
             $sql .= ! empty( $_REQUEST['order'] ) ? ' ' . esc_sql( $_REQUEST['order'] ) : ' ASC';
         }
 
-        echo $sql;
-
         $result = $wpdb->get_results( $sql, 'ARRAY_A' );
 
         return $result;
@@ -173,14 +179,6 @@ class Tweets_Table extends WP_List_Table
         echo "\xEF\xBB\xBF";
         echo $tableHeader;
         foreach ($results as $result){
-
-//            $name = $result['name'];
-//            $text = $result['text'];
-//            $tag = $result['tag'];
-//
-//            mb_convert_encoding($name,'UTF-16LE','UTF-8');
-//            mb_convert_encoding($text,'UTF-16LE','UTF-8');
-//            mb_convert_encoding($tag,'UTF-16LE','UTF-8');
 
             echo "<tr>
                       <td>{$result['id']}</td>
@@ -220,5 +218,21 @@ class Tweets_Table extends WP_List_Table
         }
 
         die();
+    }
+
+    public function view_edit_form ($result)
+    {
+        echo '<div id="edit_form">
+                        <form name="edit" method="get" action="save_data">
+                            <p>Name</p>
+                            <input type="text" name="edit_name" class="edit-field" value="' . $result[0]['name'] .'">
+                            <p>Date</p>
+                            <input type="text" name="edit_date" class="edit-field" value="' . $result[0]['date'] .'">
+                            <p>Tweet</p>
+                            <textarea class="tweet-text" name="edit_text">' . $result[0]['text'] . '</textarea>
+                            <br>
+                            <input type="submit" value="OK">
+                        </form> 
+                  </div>';
     }
 }

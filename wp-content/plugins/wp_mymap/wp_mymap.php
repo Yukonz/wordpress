@@ -7,11 +7,11 @@ Author: Viktor.G
 Text Domain: wp-mymap
 */
 
-register_activation_hook(__FILE__, 'wp_mymap_activation');
-register_deactivation_hook(__FILE__, 'wp_mymap_deactivation');
-register_uninstall_hook(__FILE__, 'wp_mymap_uninstall');
+register_activation_hook(__FILE__, 'mymap_activation');
+register_deactivation_hook(__FILE__, 'mymap_deactivation');
+register_uninstall_hook(__FILE__, 'mymap_uninstall');
 
-function wp_mymap_activation()
+function mymap_activation()
 {
     global $wpdb;
     $table_name = $wpdb->prefix . 'tweets';
@@ -25,7 +25,7 @@ function wp_mymap_activation()
     $wpdb->query($sql);
 }
 
-function wp_mymap_deactivation()
+function mymap_deactivation()
 {
     global $wpdb;
     $table_name = $wpdb->prefix . 'tweets';
@@ -33,19 +33,20 @@ function wp_mymap_deactivation()
     $wpdb->query($sql);
 }
 
-function wp_mymap_uninstall()
+function mymap_uninstall()
 {
     wp_myplugin_deactivation();
 }
 
-add_action('wp', 'wp_hourly_tweets');
+add_action('wp', 'set_hourly_tweets');
 add_action('get_hourly_tweets', 'get_tweets');
-function wp_hourly_tweets() {
+function set_hourly_tweets() {
     if ( !wp_next_scheduled( 'get_hourly_tweets' ) ) {
         wp_schedule_event(time(), 'hourly', 'get_hourly_tweets');
     }
 }
 
+add_action('update_option', 'get_tweets');
 function get_tweets()
 {
     global $wpdb;
@@ -82,9 +83,8 @@ function get_tweets()
     }
 }
 
-
-add_action('admin_menu', 'wp_mymap_menu');
-function wp_mymap_menu()
+add_action('admin_menu', 'register_mymap_menu');
+function register_mymap_menu()
 {
     add_menu_page('WP Mymap Settings',
         'WP MyMap Settings',
@@ -112,7 +112,7 @@ function check_twitter_subject($data){
 function wp_mymap_settings()
 {
     do_action( 'load_scripts_for_map' );
-    get_tweets(); ?>
+//    get_tweets(); ?>
     <h2>WP MyMap Plugin</h2>
     <?php settings_errors(); ?>
     <div class="wrapper">
@@ -158,8 +158,8 @@ function wp_mymap_settings()
 
 <?php }
 
-add_action( 'load_scripts_for_map', 'load_scripts');
-function load_scripts()
+add_action( 'load_scripts_for_map', 'load_mymap_scripts');
+function load_mymap_scripts()
 {
     wp_enqueue_script('jquery');
     wp_enqueue_script( 'map_js', plugin_dir_url( __FILE__ ) . '/js/map.js' , 'jquery');
@@ -173,8 +173,8 @@ function load_scripts()
     wp_localize_script( 'map_js', 'params', $map_params );
 }
 
-add_action('admin_enqueue_scripts', 'load_styles');
-function load_styles()
+add_action('admin_enqueue_scripts', 'load_mymap_styles');
+function load_mymap_styles()
 {
     wp_enqueue_style( 'style_css', plugin_dir_url( __FILE__ ) . '/css/style.css' );
 }
@@ -231,8 +231,8 @@ function create_tweets_table()
 <?php
 }
 
-add_action('admin_menu','tweets_menu');
-function tweets_menu()
+add_action('admin_menu','register_tweets_table');
+function register_tweets_table()
 {
     $hook = add_menu_page('Tweets Table',
         'Tweets Table',

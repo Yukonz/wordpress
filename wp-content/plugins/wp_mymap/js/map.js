@@ -84,6 +84,15 @@ function initMap()
         circle.setRadius(map_radius);
     });
 
+    jQuery(document).on('input', '#map_radius_value', function() {
+        map_radius_km = jQuery('#map_radius_value').val();
+        map_radius_km = Number(map_radius_km);
+        if (map_radius_km === 0) {map_radius_km = 1}
+        jQuery('#map_radius').val(map_radius_km);
+        map_radius = map_radius_km * 1000;
+        circle.setRadius(map_radius);
+    });
+
     jQuery(document).on('input', '#map_latitude', function() {
         map_latitude = Number(jQuery('#map_latitude').val());
         circle.setCenter({lat: map_latitude, lng: map_longitude});
