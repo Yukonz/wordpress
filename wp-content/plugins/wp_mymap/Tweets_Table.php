@@ -66,13 +66,29 @@ class Tweets_Table extends WP_List_Table
         return '<input type="checkbox" name="bulk-delete[]" value="'.$item['id'].'" />';
     }
 
+    public function column_id($item){
+        return "<span class='tweet-id'>" . $item['id']. "</span>";
+    }
+
     public function column_name($item)
     {
         $current_page = $this->get_pagenum();
-        return $item['name'].' '.$this -> row_actions(array(
+        return "<span class='tweet-name'>" . $item['name']. "</span>" .' '.$this -> row_actions(array(
                 'edit'   => '<a class="edit_link" href="' . $item['id'] . '">Edit</a>',
                 'delete' => '<a href="?page='.$_REQUEST['page']. '&paged=' . $current_page . '&action=delete&id='.$item['id'].'">Delete</a>',
             ));
+    }
+
+    public function column_text($item){
+        return "<span class='tweet-text'>" . $item['text']. "</span>";
+    }
+
+    public function column_date($item){
+        return "<span class='tweet-date'>" . $item['date']. "</span>";
+    }
+
+    public function column_tag($item){
+        return "<span class='tweet-tag'>" . $item['tag']. "</span>";
     }
 
     public function get_bulk_actions()

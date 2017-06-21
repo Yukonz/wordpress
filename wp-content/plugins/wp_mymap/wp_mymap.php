@@ -332,12 +332,11 @@ function do_output_buffer()
 add_action('wp_ajax_edit_tweet', 'edit_tweet');
 function edit_tweet() {
     global $wpdb;
-    $sql = "UPDATE {$wpdb->prefix}tweets SET name='" . $_POST['edit_name'] . "', 
-                                             text='" . $_POST['edit_text'] ."', 
-                                             date='" . $_POST['edit_date'] . "' 
+    $sql = "UPDATE {$wpdb->prefix}tweets SET name='" . $_POST['edit_name'] . "',
+                                             text='" . $_POST['edit_text'] ."',
+                                             date='" . $_POST['edit_date'] . "'
                                              WHERE id={$_POST['edit_id']}";
     $wpdb->query($sql);
-
     die();
 }
 

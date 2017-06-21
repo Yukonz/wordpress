@@ -40,8 +40,6 @@ function initMap()
         map_radius_km = parseInt(map_radius / 1000);
         jQuery('#map_radius_value').val(map_radius_km);
         jQuery('#map_radius').val(map_radius_km);
-
-        console.log(map_radius_km);  // Радиус круга
     });
 
     google.maps.event.addListener(circle, 'dragend', function() {
@@ -52,9 +50,6 @@ function initMap()
 
         jQuery('#map_latitude').val(map_latitude);
         jQuery('#map_longitude').val(map_longitude);
-
-        console.log(map_latitude);  // Координаты центра круга
-        console.log(map_longitude);  // Координаты центра круга
     });
 
     google.maps.event.addListener(circle, 'click', function (event) {
@@ -80,27 +75,32 @@ function initMap()
         map_radius_km = jQuery('#map_radius').val();
         jQuery('#map_radius_value').val(map_radius);
         map_radius = Number(map_radius_km) * 1000;
-        console.log(map_radius);
+
         circle.setRadius(map_radius);
     });
 
     jQuery(document).on('input', '#map_radius_value', function() {
         map_radius_km = jQuery('#map_radius_value').val();
         map_radius_km = Number(map_radius_km);
+
         if (map_radius_km === 0) {map_radius_km = 1}
+
         jQuery('#map_radius').val(map_radius_km);
         map_radius = map_radius_km * 1000;
+
         circle.setRadius(map_radius);
     });
 
     jQuery(document).on('input', '#map_latitude', function() {
         map_latitude = Number(jQuery('#map_latitude').val());
+
         circle.setCenter({lat: map_latitude, lng: map_longitude});
         marker.setPosition({lat: map_latitude, lng: map_longitude});
     });
 
     jQuery(document).on('input', '#map_longitude', function() {
         map_longitude = Number(jQuery('#map_longitude').val());
+
         circle.setCenter({lat: map_latitude, lng: map_longitude});
         marker.setPosition({lat: map_latitude, lng: map_longitude});
     });

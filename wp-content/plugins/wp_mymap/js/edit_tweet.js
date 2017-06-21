@@ -1,22 +1,18 @@
 jQuery(document).ready(function($){
-    $('.edit_link').on('click', function(event){
-        var id=$(this).attr('href');
-        event.preventDefault();
+    $('a.edit_link').on('click', function(event){
 
-        var data = {
-            action: 'get_tweet',
-            edit_id: id,
-            dataType: "json"
-        };
+        var id = $(this).closest('tr').find('span.tweet-id').html();
+        var name = $(this).closest('tr').find('span.tweet-name').html();
+        var text = $(this).closest('tr').find('span.tweet-text').html();
+        var date = $(this).closest('tr').find('span.tweet-date').html();
 
-        $.post( ajaxurl, data, function(tweet_data) {
-            var data = $.parseJSON(tweet_data);
-            $("#edit_form").fadeIn(300);
+        var currentTweet = this;
 
-            $("#edit_text").val(data.text);
-            $("#edit_name").val(data.name);
-            $("#edit_date").val(data.date);
-        });
+        $( "#edit_form" ).fadeIn(300);
+
+        $("#edit_name").val(name);
+        $("#edit_date").val(date);
+        $("#edit_text").val(text);
 
         $('#edit_button').on('click', function(){
             var data = {
@@ -27,13 +23,20 @@ jQuery(document).ready(function($){
                 edit_id: id
             };
 
-            var url = document.location.origin + '/wp-admin/admin.php?page=tweets_table&paged=' + $("#current-page-selector").val();
-
             $.post( ajaxurl, data, function() {
+                name = $("#edit_name").val();
+                date = $("#edit_date").val();
+                text = $("#edit_text").val();
+
+                $(currentTweet).closest('tr').find('.tweet-name').html(name);
+                $(currentTweet).closest('tr').find('.tweet-text').html(text);
+                $(currentTweet).closest('tr').find('.tweet-date').html(date);
+
                 $( "#edit_form" ).fadeOut(300);
-                window.location.replace(url);
-                $("#current_page_selector").val('4');
+
             });
-        })
-    })
+
+        });
+        event.preventDefault();
+    });
 });
