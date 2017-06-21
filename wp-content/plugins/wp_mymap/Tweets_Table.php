@@ -158,16 +158,21 @@ class Tweets_Table extends WP_List_Table
         $sql = "SELECT * FROM {$wpdb->prefix}tweets";
         $results = $wpdb->get_results($sql, 'ARRAY_A');
 
+        $xml = new SimpleXMLElement('<root/>');
+
         foreach ($results as $result){
-            $res_arr[] = array_flip($result);
+            $tweet = $xml->addChild('tweet');
+            $tweet->addChild('id', $result['id']);
+            $tweet->addChild('name', $result['name']);
+            $tweet->addChild('text', $result['text']);
+            $tweet->addChild('date', $result['date']);
+            $tweet->addChild('tag', $result['tag']);
         }
 
-        $xml = new SimpleXMLElement('<root/>');
-        array_walk_recursive($res_arr, array($xml, 'addChild'));
         ob_clean();
         header('Content-type: text/xml; charset=UTF-8');
         header('Content-Disposition: attachment; filename=Tweets.xml');
-        echo $xml->saveXML();
+        echo $xml->asXML();
         die();
     }
 
@@ -177,25 +182,24 @@ class Tweets_Table extends WP_List_Table
         $sql = "SELECT * FROM {$wpdb->prefix}tweets";
         $results = $wpdb->get_results($sql, 'ARRAY_A');
 
+        $csvHeader='"ID","Name","Tweet","Date","Tag"';
+
         ob_clean();
 
-        $csvHeader='"ID";"Name";"Tweet";"Date";"Tag";' ;
+        header( "Content-Type: text/csv;charset=utf-8" );
+        header( "Content-Disposition: attachment;filename=Tweets.csv" );
+        header("Pragma: no-cache");
+        header("Expires: 0");
 
-        header('Content-Encoding: UTF-8');
-        header('Content-type: text/csv; charset=UTF-8');
-        header('Content-Disposition: attachment; filename=Tweets.csv');
-        echo "\xEF\xBB\xBF";
         echo $csvHeader;
-        echo "\n ";
-        foreach ($results as $result){
-            echo '"' . $result['id'] . '"' . ';' .
-                    '"' . $result['name'] . '"' . ';' .
-                    '"' . $result['text'] . '"' . ';' .
-                    '"' . $result['date'] . '"' . ';' .
-                    '"' . $result['tag'] . '"' . ';';
-            echo "\n";
-        }
+        echo "\n";
 
+        $outputFile = fopen('php://output', 'w');
+
+        foreach ($results as $result) {
+            fputcsv($outputFile, $result);
+        }
+        fclose($outputFile);
         die();
     }
 }

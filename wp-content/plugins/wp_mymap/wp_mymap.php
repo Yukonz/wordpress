@@ -8,7 +8,6 @@ Text Domain: wp-mymap
 */
 
 session_start();
-//unset($_SESSION['search']);
 
 register_activation_hook(__FILE__, 'mymap_activation');
 register_deactivation_hook(__FILE__, 'mymap_deactivation');
@@ -48,11 +47,6 @@ function set_hourly_tweets() {
         wp_schedule_event(time(), 'hourly', 'get_hourly_tweets');
     }
 }
-
-//add_action('admin_menu', 'drop_search_results');
-//function drop_search_results() {
-//    unset($_SESSION['search']);
-//}
 
 add_action('update_option', 'get_tweets');
 function get_tweets()
@@ -104,6 +98,7 @@ function get_tweets()
             $sql .= ", ";
         }
     }
+
     $wpdb->query($sql);
 }
 
@@ -126,7 +121,7 @@ function remove_special_characters ($data){
     return $data;
 }
 
-add_action('admin_menu', 'register_mymap_menu');
+add_action( 'admin_menu', 'register_mymap_menu');
 function register_mymap_menu()
 {
     add_menu_page('WP Mymap Settings',
@@ -229,17 +224,15 @@ function load_search_drop_script()
     wp_enqueue_script('jquery');
     wp_enqueue_script( 'drop_search_js', plugin_dir_url( __FILE__ ) . '/js/drop_search.js' , 'jquery');
     wp_enqueue_script( 'edit_tweet_js', plugin_dir_url( __FILE__ ) . '/js/edit_tweet.js' , 'jquery');
-
 }
 
-add_action('admin_enqueue_scripts', 'load_mymap_styles');
+add_action( 'admin_enqueue_scripts', 'load_mymap_styles');
 function load_mymap_styles()
 {
     wp_enqueue_style( 'style_css', plugin_dir_url( __FILE__ ) . '/css/style.css' );
 }
 
-
-add_action('init', 'init_textdomain');
+add_action( 'init', 'init_textdomain');
 function init_textdomain()
 {
     load_plugin_textdomain('wp-mymap', false ,'wp_mymap/languages/');
@@ -258,6 +251,7 @@ function get_tweets_from_db(){
               </div>";
     }
 }
+
 
 //WP-TABLE
 
