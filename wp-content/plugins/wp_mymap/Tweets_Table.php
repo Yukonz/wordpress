@@ -2,7 +2,9 @@
 
 class Tweets_Table extends WP_List_Table
 {
-    public function prepare_items($search ='')
+    public $search;
+
+    public function prepare_items()
     {
         $per_page = $this->get_items_per_page('tweets_per_page', 5);
 
@@ -12,7 +14,12 @@ class Tweets_Table extends WP_List_Table
             $this -> get_sortable_columns()
         );
 
-        $data = $this -> get_tweets_data($search);
+        if (isset($_REQUEST['s'])) {
+            $_SESSION['search'] = $_REQUEST['s'];
+        }
+
+        $this->search = $_SESSION['search'];
+        $data = $this -> get_tweets_data($this->search);
         $this->process_bulk_action();
         $this -> set_pagination_args( array(
             'total_items' => count($data),
@@ -54,47 +61,52 @@ class Tweets_Table extends WP_List_Table
         return array();
     }
 
-    function column_cb($item)
+    public function column_cb($item)
     {
         return '<input type="checkbox" name="bulk-delete[]" value="'.$item['id'].'" />';
     }
 
-    function column_name($item)
+    public function column_name($item)
     {
+        $current_page = $this->get_pagenum();
         return $item['name'].' '.$this -> row_actions(array(
-                'edit'   => '<a href="?page='.$_REQUEST['page'].'&action=edit&id='.$item['id'].'">Edit</a>',
-                'delete' => '<a href="?page='.$_REQUEST['page'].'&action=delete&id='.$item['id'].'">Delete</a>',
+                'edit'   => '<a class="edit_link" href="?page='.$_REQUEST['page'].'&paged=' . $current_page . '&action=edit&id='.$item['id'].'">Edit</a>',
+                'delete' => '<a href="?page='.$_REQUEST['page']. '&paged=' . $current_page . '&action=delete&id='.$item['id'].'">Delete</a>',
             ));
     }
 
-    function get_bulk_actions()
+    public function get_bulk_actions()
     {
         return $actions = ['bulk-delete' => 'Delete'];
     }
 
     public function process_bulk_action()
     {
-        if (isset($_POST['edit_text'])){
-            global $wpdb;
-            $sql = "UPDATE {$wpdb->prefix}tweets SET name='" . $_POST['edit_name'] . "', text='" . $_POST['edit_text'] ."', date='" . $_POST['edit_date'] . "' WHERE id={$_GET['id']}";
-            $wpdb->query($sql);
-            wp_redirect( esc_url( add_query_arg() ) );
-        }
-
         if ( 'delete' === $this->current_action() ) {
             $this->delete_tweet ($_GET['id']);
-            wp_redirect( esc_url( add_query_arg() ) );
+            $current_url = '/wp-admin/admin.php?page=tweets_table&paged=' . $this -> get_pagenum();
+            wp_redirect($current_url);
         }
 
         if ( 'edit' === $this->current_action() ) {
             global $wpdb;
             $sql = "SELECT * FROM {$wpdb->prefix}tweets WHERE id={$_GET['id']}";
             $result = $wpdb->get_results( $sql, 'ARRAY_A' );
-            $this->view_edit_form($result);
+
+            wp_enqueue_script('jquery');
+            wp_enqueue_script( 'edit_js', plugin_dir_url( __FILE__ ) . '/js/edit.js' , 'jquery');
+
+            $edit_fields = array(
+                'id'=>$_GET['id'],
+                'name'=>$result[0]['name'],
+                'text'=>$result[0]['text'],
+                'date'=>$result[0]['date']
+            );
+            wp_localize_script( 'edit_js', 'params', $edit_fields );
         }
 
-        if ( 'to_xls' === $this->current_action() ) {
-            $this->tweets_to_xls();
+        if ( 'to_xml' === $this->current_action() ) {
+            $this->tweets_to_xml();
         }
 
         if ( 'to_csv' === $this->current_action() ) {
@@ -106,7 +118,8 @@ class Tweets_Table extends WP_List_Table
             foreach ($delete_ids as $delete_id){
                 $this->delete_tweet ($delete_id);
             }
-            wp_redirect( esc_url( add_query_arg() ) );
+            $current_url = '/wp-admin/admin.php?page=tweets_table&paged=' . $this -> get_pagenum();
+            wp_redirect($current_url);
         }
     }
 
@@ -139,10 +152,10 @@ class Tweets_Table extends WP_List_Table
     {
         global $wpdb;
 
-        $search = urldecode($search);
         $sql = "SELECT * FROM {$wpdb->prefix}tweets";
 
-        if(!empty($search)){
+        if(!empty($this->search)){
+            $search = urldecode($this->search);
             $sql .= " WHERE name LIKE '%{$search}%' OR text LIKE '%{$search}%' OR date LIKE '%{$search}%' OR tag LIKE '%{$search}%' ";
         }
 
@@ -156,39 +169,22 @@ class Tweets_Table extends WP_List_Table
         return $result;
     }
 
-    public function tweets_to_xls()
+    public function tweets_to_xml()
     {
         global $wpdb;
         $sql = "SELECT * FROM {$wpdb->prefix}tweets";
         $results = $wpdb->get_results($sql, 'ARRAY_A');
 
-        ob_clean();
-
-        $tableHeader="<table>
-                            <tr>
-                                <td>ID</td>
-                                <td>Name</td>
-                                <td>Tweet</td>
-                                <td>Date</td>
-                                <td>#Tag</td>
-                            </tr>";
-
-        header('Content-Encoding: UTF-8');
-        header('Content-type: text/csv; charset=UTF-8');
-        header('Content-Disposition: attachment; filename=Tweets.xls');
-        echo "\xEF\xBB\xBF";
-        echo $tableHeader;
         foreach ($results as $result){
-
-            echo "<tr>
-                      <td>{$result['id']}</td>
-                      <td>{$result['name']}</td>
-                      <td>{$result['text']}</td>
-                      <td>{$result['date']}</td>
-                      <td>{$result['tag']}</td>
-                  </tr>";
+            $res_arr[] = array_flip($result);
         }
-        echo "</table>";
+
+        $xml = new SimpleXMLElement('<root/>');
+        array_walk_recursive($res_arr, array($xml, 'addChild'));
+        ob_clean();
+        header('Content-type: text/xml; charset=UTF-8');
+        header('Content-Disposition: attachment; filename=Tweets.xml');
+        echo $xml->saveXML();
         die();
     }
 
@@ -218,21 +214,5 @@ class Tweets_Table extends WP_List_Table
         }
 
         die();
-    }
-
-    public function view_edit_form ($result)
-    {
-        echo '<div id="edit_form">
-                        <form name="edit" method="get" action="save_data">
-                            <p>Name</p>
-                            <input type="text" name="edit_name" class="edit-field" value="' . $result[0]['name'] .'">
-                            <p>Date</p>
-                            <input type="text" name="edit_date" class="edit-field" value="' . $result[0]['date'] .'">
-                            <p>Tweet</p>
-                            <textarea class="tweet-text" name="edit_text">' . $result[0]['text'] . '</textarea>
-                            <br>
-                            <input type="submit" value="OK">
-                        </form> 
-                  </div>';
     }
 }

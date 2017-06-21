@@ -7,6 +7,9 @@ Author: Viktor.G
 Text Domain: wp-mymap
 */
 
+session_start();
+//unset($_SESSION['search']);
+
 register_activation_hook(__FILE__, 'mymap_activation');
 register_deactivation_hook(__FILE__, 'mymap_deactivation');
 register_uninstall_hook(__FILE__, 'mymap_uninstall');
@@ -46,6 +49,11 @@ function set_hourly_tweets() {
     }
 }
 
+//add_action('admin_menu', 'drop_search_results');
+//function drop_search_results() {
+//    unset($_SESSION['search']);
+//}
+
 add_action('update_option', 'get_tweets');
 function get_tweets()
 {
@@ -75,12 +83,47 @@ function get_tweets()
 
     $table_name = $wpdb->prefix . 'tweets';
     $wpdb->query("TRUNCATE TABLE {$table_name}");
+    $sql ="INSERT INTO {$table_name} (name, text, date, tag) VALUES ";
+    $subject = get_option('twitter_subject');
 
-    foreach ($tweets['statuses'] as $tweet) {
-        $tweet_data = array('text'=>$tweet['text'], 'name' => $tweet['user']['name'], 'date'=>$tweet['created_at'], 'tag'=>get_option('twitter_subject'));
-        $wpdb->insert($table_name, $tweet_data, array("%s", "%s", "%s"));
-//        echo '<br><hr>' . $tweet['text'] . ' | ' . $tweet['created_at'] . ' | ' . $tweet['user']['name'];
+    for ($i=0;$i<$tweets_count;$i++){
+        $tweet_name = $tweets['statuses'][$i]['user']['name'];
+        $tweet_text = $tweets['statuses'][$i]['text'];
+        $tweet_date = $tweets['statuses'][$i]['created_at'];
+
+        $tweet_name = remove_special_characters($tweet_name);
+        $tweet_text = remove_special_characters($tweet_text);
+
+        echo "<hr>NAME: " . $tweet_name . "<br>TEXT: " . $tweet_text . "<br>DATE: " . $tweet_date . "<hr>" ;
+
+        $sql .= "('{$tweet_name}', 
+                  '{$tweet_text}', 
+                  '{$tweet_date}', 
+                  '{$subject}')";
+        if ($i<($tweets_count - 1)){
+            $sql .= ", ";
+        }
     }
+    $wpdb->query($sql);
+}
+
+function remove_special_characters ($data){
+    $data = sanitize_text_field($data);
+    $data = str_replace("'", " ", $data);
+
+    $regex_emoticons = '/[\x{1F300}-\x{1F5FF}]/u';
+    $data = preg_replace($regex_emoticons, '',$data);
+
+    $regex_icons = '/[\x{1F600}-\x{1F64F}]/u';
+    $data = preg_replace($regex_icons, '',$data);
+
+    $regex_misc = '/[\x{2600}-\x{26FF}]/u';
+    $data = preg_replace($regex_misc, '',$data);
+
+    $regex_dingbats = '/[\x{2700}-\x{27BF}]/u';
+    $data = preg_replace($regex_dingbats, '',$data);
+
+    return $data;
 }
 
 add_action('admin_menu', 'register_mymap_menu');
@@ -173,6 +216,20 @@ function load_mymap_scripts()
     wp_localize_script( 'map_js', 'params', $map_params );
 }
 
+add_action( 'load_search_script', 'load_search_save_script');
+function load_search_save_script()
+{
+    wp_enqueue_script('jquery');
+    wp_enqueue_script( 'save_search_js', plugin_dir_url( __FILE__ ) . '/js/save_search.js' , 'jquery');
+}
+
+add_action( 'admin_enqueue_scripts', 'load_search_drop_script');
+function load_search_drop_script()
+{
+    wp_enqueue_script('jquery');
+    wp_enqueue_script( 'drop_search_js', plugin_dir_url( __FILE__ ) . '/js/drop_search.js' , 'jquery');
+}
+
 add_action('admin_enqueue_scripts', 'load_mymap_styles');
 function load_mymap_styles()
 {
@@ -207,25 +264,32 @@ require_once('Tweets_Table.php');
 
 function create_tweets_table()
 {
+    do_action( 'load_search_script' );
     $TweetsTable = new Tweets_Table;
     ?>
 
     <div id='tweets_table' class="wrap"><h2>Tweets Table </h2>
          <form method="post" >
-         <input type="hidden" name="page" value="tweets_search">
+             <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>" />
              <?php
-             if( isset($_POST['s']) ){
-                 $TweetsTable->prepare_items($_POST['s']);
-             } else {
-                 $TweetsTable->prepare_items();
-             }
-            $TweetsTable->search_box( 'search', 'search_id' );
-            $TweetsTable->display();
-            ?>
+                $TweetsTable->prepare_items();
+                $TweetsTable->search_box( 'search', 'search_id' );
+                $TweetsTable->display();
+             ?>
          </form>
-        <button class='button action'><a href='admin.php?page=tweets_table&action=to_xls' >Save to XLS</a></button>
+        <button class='button action'><a href='admin.php?page=tweets_table&action=to_xml' >Save to XML</a></button>
         <br>
         <button class='button action'><a href='admin.php?page=tweets_table&action=to_csv' >Save to CSV</a></button>
+    </div>
+    <div id="edit_form">
+            <p>Name</p>
+            <input type="text" id="edit_name" name="edit_name" class="edit-field" value="">
+            <p>Date</p>
+            <input type="text" id="edit_date" name="edit_date" class="edit-field" value="">
+            <p>Tweet</p>
+            <textarea class="tweet-text" id="edit_text" name="edit_text"></textarea>
+            <br>
+            <button id="edit_button">Edit</button>
     </div>
 
 <?php
@@ -267,4 +331,28 @@ add_action('init', 'do_output_buffer');
 function do_output_buffer()
 {
     ob_start();
+}
+
+add_action('wp_ajax_edit_tweet', 'edit_tweet');
+function edit_tweet() {
+    global $wpdb;
+    $sql = "UPDATE {$wpdb->prefix}tweets SET name='" . $_POST['edit_name'] . "', 
+                                             text='" . $_POST['edit_text'] ."', 
+                                             date='" . $_POST['edit_date'] . "' 
+                                             WHERE id={$_POST['edit_id']}";
+    $wpdb->query($sql);
+
+    die();
+}
+
+add_action('wp_ajax_get_search_data', 'get_search_session');
+function get_search_session() {
+    echo $_SESSION['search'];
+    die();
+}
+
+add_action('wp_ajax_drop_search_data', 'drop_search_session');
+function drop_search_session() {
+    unset ($_SESSION['search']);
+    die();
 }

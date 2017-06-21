@@ -55,6 +55,7 @@
     width: 500px;
     height: 470px;
     padding: 25px;
+    display: none;
 }
 
 .edit-field {
