@@ -70,7 +70,7 @@ class Tweets_Table extends WP_List_Table
     {
         $current_page = $this->get_pagenum();
         return $item['name'].' '.$this -> row_actions(array(
-                'edit'   => '<a class="edit_link" href="?page='.$_REQUEST['page'].'&paged=' . $current_page . '&action=edit&id='.$item['id'].'">Edit</a>',
+                'edit'   => '<a class="edit_link" href="' . $item['id'] . '">Edit</a>',
                 'delete' => '<a href="?page='.$_REQUEST['page']. '&paged=' . $current_page . '&action=delete&id='.$item['id'].'">Delete</a>',
             ));
     }
@@ -86,23 +86,6 @@ class Tweets_Table extends WP_List_Table
             $this->delete_tweet ($_GET['id']);
             $current_url = '/wp-admin/admin.php?page=tweets_table&paged=' . $this -> get_pagenum();
             wp_redirect($current_url);
-        }
-
-        if ( 'edit' === $this->current_action() ) {
-            global $wpdb;
-            $sql = "SELECT * FROM {$wpdb->prefix}tweets WHERE id={$_GET['id']}";
-            $result = $wpdb->get_results( $sql, 'ARRAY_A' );
-
-            wp_enqueue_script('jquery');
-            wp_enqueue_script( 'edit_js', plugin_dir_url( __FILE__ ) . '/js/edit.js' , 'jquery');
-
-            $edit_fields = array(
-                'id'=>$_GET['id'],
-                'name'=>$result[0]['name'],
-                'text'=>$result[0]['text'],
-                'date'=>$result[0]['date']
-            );
-            wp_localize_script( 'edit_js', 'params', $edit_fields );
         }
 
         if ( 'to_xml' === $this->current_action() ) {

@@ -228,6 +228,8 @@ function load_search_drop_script()
 {
     wp_enqueue_script('jquery');
     wp_enqueue_script( 'drop_search_js', plugin_dir_url( __FILE__ ) . '/js/drop_search.js' , 'jquery');
+    wp_enqueue_script( 'edit_tweet_js', plugin_dir_url( __FILE__ ) . '/js/edit_tweet.js' , 'jquery');
+
 }
 
 add_action('admin_enqueue_scripts', 'load_mymap_styles');
@@ -354,5 +356,15 @@ function get_search_session() {
 add_action('wp_ajax_drop_search_data', 'drop_search_session');
 function drop_search_session() {
     unset ($_SESSION['search']);
+    die();
+}
+
+add_action('wp_ajax_get_tweet', 'get_single_tweet_data');
+function get_single_tweet_data() {
+    global $wpdb;
+    $sql = "SELECT * FROM {$wpdb->prefix}tweets WHERE id={$_POST['edit_id']}";
+    $result = $wpdb->get_results( $sql, 'ARRAY_A' );
+
+    echo json_encode($result[0]);
     die();
 }
