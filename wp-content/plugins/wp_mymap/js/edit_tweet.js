@@ -9,7 +9,7 @@ jQuery(document).ready(function($){
 
         currentTweet = $(this);
 
-        $( "#edit_form" ).fadeIn(300);
+        $("#edit_form").fadeIn(300);
 
         $("#edit_name").val(name);
         $("#edit_date").val(date);
@@ -36,7 +36,7 @@ jQuery(document).ready(function($){
             $(currentTweet).closest('tr').find('.tweet-text').html(text);
             $(currentTweet).closest('tr').find('.tweet-date').html(date);
 
-            $( "#edit_form" ).fadeOut(300);
+            $("#edit_form").fadeOut(300);
         });
     });
 });

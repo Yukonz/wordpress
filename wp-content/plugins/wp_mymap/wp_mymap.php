@@ -88,8 +88,6 @@ function get_tweets()
         $tweet_name = remove_special_characters($tweet_name);
         $tweet_text = remove_special_characters($tweet_text);
 
-        echo "<hr>NAME: " . $tweet_name . "<br>TEXT: " . $tweet_text . "<br>DATE: " . $tweet_date . "<hr>" ;
-
         $sql .= "('{$tweet_name}', 
                   '{$tweet_text}', 
                   '{$tweet_date}', 
